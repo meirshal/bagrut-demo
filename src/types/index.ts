@@ -5,10 +5,18 @@ export const RiskLevel = {
   LEVEL_1: 1,
   LEVEL_2: 2,
   LEVEL_3: 3,
-  LEVEL_4: 4,
-  LEVEL_5: 5,
 } as const;
 export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel];
+
+export const ExcellenceTier = {
+  NONE: 'none',
+  BORDER_GIMEL: 'border_gimel',  // 81-84: close to Gimel threshold
+  GIMEL: 'gimel',                // 85-89: מצויינות 1-ג
+  BORDER_BET: 'border_bet',      // 86-89 within Gimel: close to Bet threshold
+  BET: 'bet',                    // 90-95: מצויינות 1-ב
+  ALEPH: 'aleph',                // 96+: מצויינות 1-א
+} as const;
+export type ExcellenceTier = (typeof ExcellenceTier)[keyof typeof ExcellenceTier];
 
 export const UnitLevel = {
   UNITS_3: 3,
@@ -72,6 +80,7 @@ export interface Student {
   englishUnitLevel: UnitLevel;
   accommodations: AccommodationType[];
   riskLevel: RiskLevel;
+  excellenceTier: ExcellenceTier;
   eligibilityStatus: EligibilityStatus;
   weightedAverage: number;
   grades: Record<string, SubjectGrades>;

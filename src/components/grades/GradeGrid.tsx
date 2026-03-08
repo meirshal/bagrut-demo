@@ -1,19 +1,25 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
+  getFilteredRowModel,
   flexRender,
   type ColumnDef,
+  type ColumnFiltersState,
   type CellContext,
   type HeaderContext,
+  type FilterFn,
 } from '@tanstack/react-table';
+import { ListFilter, X } from 'lucide-react';
 import type { Student, Subject } from '@/types';
-import { AccommodationType } from '@/types';
+import { AccommodationType, ExcellenceTier } from '@/types';
 import { getStudentsByClass } from '@/lib/utils';
 import { getClasses, getSubjects } from '@/data/mock-data';
 import { BG_COLORS, TEXT_COLORS, getScoreCellStyle } from '@/lib/colors';
 import { ScoreCell } from './ScoreCell';
 import { RiskBadge } from './RiskBadge';
+import { ExcellenceBadge } from './ExcellenceBadge';
+import { ColumnFilter, type FilterConfig, type RangeFilterValue } from './ColumnFilter';
 
 // ─── Subject column configuration ─────────────────────────────────────────────
 
@@ -75,6 +81,91 @@ const ACCOMMODATION_CONFIG: Record<string, { label: string; title: string }> = {
   [AccommodationType.SPECIAL]: { label: 'ע"ח', title: 'ע"ח - התאמות מיוחדות' },
 };
 
+// ─── Custom filter functions ─────────────────────────────────────────────────
+
+const multiSelectFilter: FilterFn<Student> = (row, columnId, filterValue: string[]) => {
+  const cellValue = row.getValue(columnId);
+  if (filterValue.length === 0) return true;
+  return filterValue.includes(String(cellValue));
+};
+
+const accommodationFilter: FilterFn<Student> = (row, _columnId, filterValue: string[]) => {
+  if (filterValue.length === 0) return true;
+  const accs = row.original.accommodations ?? [];
+  if (filterValue.includes('none')) {
+    if (accs.length === 0) return true;
+  }
+  return accs.some((a) => filterValue.includes(a));
+};
+
+const rangeFilter: FilterFn<Student> = (row, columnId, filterValue: RangeFilterValue) => {
+  const val = row.getValue(columnId) as number | undefined;
+  if (val === undefined) return true;
+  if (filterValue.min !== undefined && val < filterValue.min) return false;
+  if (filterValue.max !== undefined && val > filterValue.max) return false;
+  return true;
+};
+
+const textFilter: FilterFn<Student> = (row, columnId, filterValue: string) => {
+  const val = row.getValue(columnId) as string | undefined;
+  if (!val) return false;
+  const haystack = val.toLowerCase();
+  const tokens = filterValue.toLowerCase().split(/\s+/).filter(Boolean);
+  return tokens.every((token) => haystack.includes(token));
+};
+
+// ─── Filter configurations per column ────────────────────────────────────────
+
+const FILTER_CONFIGS: Record<string, FilterConfig> = {
+  mathUnit: {
+    type: 'checkbox',
+    options: [
+      { value: '3', label: '3 יח"ל' },
+      { value: '4', label: '4 יח"ל' },
+      { value: '5', label: '5 יח"ל' },
+    ],
+  },
+  engUnit: {
+    type: 'checkbox',
+    options: [
+      { value: '3', label: '3 יח"ל' },
+      { value: '4', label: '4 יח"ל' },
+      { value: '5', label: '5 יח"ל' },
+    ],
+  },
+  studentNum: { type: 'text', placeholder: 'מספר תלמיד...' },
+  name: { type: 'text', placeholder: 'חיפוש שם...' },
+  accommodations: {
+    type: 'checkbox',
+    options: [
+      { value: AccommodationType.ADAPTED, label: 'מותאם' },
+      { value: AccommodationType.DICTATION, label: 'הכתבה' },
+      { value: AccommodationType.ORAL, label: 'בע"פ' },
+      { value: AccommodationType.SPECIAL, label: 'ע"ח' },
+      { value: 'none', label: 'ללא התאמות' },
+    ],
+  },
+  risk: {
+    type: 'checkbox',
+    options: [
+      { value: '1', label: 'רמה 1 - תקין' },
+      { value: '2', label: 'רמה 2 - סיכון' },
+      { value: '3', label: 'רמה 3 - סיכון גבוה' },
+    ],
+  },
+  excellence: {
+    type: 'checkbox',
+    options: [
+      { value: ExcellenceTier.ALEPH, label: 'א - מצויינות 1-א (96+)' },
+      { value: ExcellenceTier.BET, label: 'ב - מצויינות 1-ב (90+)' },
+      { value: ExcellenceTier.GIMEL, label: 'ג - מצויינות 1-ג (85+)' },
+      { value: ExcellenceTier.BORDER_GIMEL, label: 'ג? - גבול מצויינות (81-84)' },
+      { value: ExcellenceTier.NONE, label: 'ללא הצטיינות' },
+    ],
+  },
+  weightedAvg: { type: 'range' },
+};
+
 // Weight label helper: produces "30/70" from weights object
 function weightLabel(sub: Subject | undefined): string | null {
   if (!sub) return null;
@@ -84,6 +175,32 @@ function weightLabel(sub: Subject | undefined): string | null {
   const e = Math.round(sub.weights.external * 100);
   if (i === 0 && e === 0) return null;
   return `${i}/${e}`;
+}
+
+// ─── FilterableHeader: renders label + filter icon in column headers ─────────
+
+function FilterableHeader({
+  column,
+  label,
+  title,
+  filterConfig,
+}: {
+  column: { getFilterValue: () => unknown; setFilterValue: (val: unknown) => void };
+  label: string;
+  title?: string;
+  filterConfig: FilterConfig;
+}) {
+  const filterValue = column.getFilterValue() as import('./ColumnFilter').FilterValue | undefined;
+  return (
+    <div className="flex items-center gap-0.5 justify-center">
+      <span className="text-[9px] font-medium" title={title}>{label}</span>
+      <ColumnFilter
+        config={filterConfig}
+        value={filterValue}
+        onChange={(val) => column.setFilterValue(val)}
+      />
+    </div>
+  );
 }
 
 interface GradeGridProps {
@@ -225,11 +342,12 @@ const COL_ENG_UNIT_W = 32;
 const COL_NUM_W = 40;
 const COL_NAME_W = 140;
 const COL_ACCOM_W = 38;
-const COL_RISK_W = 45;
+const COL_RISK_W = 38;
+const COL_EXCEL_W = 38;
 const COL_AVG_W = 55;
 
-const FROZEN_COUNT = 7; // mathUnit, engUnit, studentNum, name, accommodations, risk, weightedAvg
-const STICKY_TOTAL = COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W + COL_RISK_W + COL_AVG_W;
+const FROZEN_COUNT = 8; // mathUnit, engUnit, studentNum, name, accommodations, risk, excellence, weightedAvg
+const STICKY_TOTAL = COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W + COL_RISK_W + COL_EXCEL_W + COL_AVG_W;
 const SUBJECT_COL_W = 45;
 const COMPONENT_COL_W = 40;
 
@@ -266,10 +384,9 @@ export function GradeGrid({ classId }: GradeGridProps) {
     return map;
   }, []);
 
-  const { columnAverages, columnCounts, columnFailCounts, weightedAverage } = useMemo(
-    () => computeAllStats(students, electiveSubjectIds),
-    [students, electiveSubjectIds]
-  );
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  const isFiltered = columnFilters.length > 0;
 
   // ─── Collect all leaf column IDs for summary rows ────────────────────────
 
@@ -300,8 +417,12 @@ export function GradeGrid({ classId }: GradeGridProps) {
     const frozen: ColumnDef<Student>[] = [
       {
         id: 'mathUnit',
-        header: () => <span className="text-[9px] font-medium" title="רמת יחידות מתמטיקה">מת</span>,
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="מת" title="רמת יחידות מתמטיקה" filterConfig={FILTER_CONFIGS.mathUnit} />
+        ),
         size: COL_MATH_UNIT_W,
+        accessorFn: (row: Student) => row.mathUnitLevel,
+        filterFn: multiSelectFilter,
         cell: (info: CellContext<Student, unknown>) => (
           <span className="text-[10px] font-bold text-slate-700 tabular-nums">
             {info.row.original.mathUnitLevel}
@@ -310,8 +431,12 @@ export function GradeGrid({ classId }: GradeGridProps) {
       },
       {
         id: 'engUnit',
-        header: () => <span className="text-[9px] font-medium" title="רמת יחידות אנגלית">אנ</span>,
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="אנ" title="רמת יחידות אנגלית" filterConfig={FILTER_CONFIGS.engUnit} />
+        ),
         size: COL_ENG_UNIT_W,
+        accessorFn: (row: Student) => row.englishUnitLevel,
+        filterFn: multiSelectFilter,
         cell: (info: CellContext<Student, unknown>) => (
           <span className="text-[10px] font-bold text-slate-700 tabular-nums">
             {info.row.original.englishUnitLevel}
@@ -320,8 +445,12 @@ export function GradeGrid({ classId }: GradeGridProps) {
       },
       {
         id: 'studentNum',
-        header: () => <span className="text-[9px]">מס</span>,
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="מס" filterConfig={FILTER_CONFIGS.studentNum} />
+        ),
         size: COL_NUM_W,
+        accessorFn: (row: Student) => String(row.studentNumber),
+        filterFn: textFilter,
         cell: (info: CellContext<Student, unknown>) => (
           <span className="text-[10px] text-slate-500 tabular-nums">
             {info.row.original.studentNumber}
@@ -330,9 +459,12 @@ export function GradeGrid({ classId }: GradeGridProps) {
       },
       {
         id: 'name',
-        header: 'שם',
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="שם" filterConfig={FILTER_CONFIGS.name} />
+        ),
         size: COL_NAME_W,
         accessorFn: (row: Student) => `${row.lastName} ${row.firstName}`,
+        filterFn: textFilter,
         cell: (info: CellContext<Student, unknown>) => (
           <span className="text-xs font-medium text-slate-800 truncate block max-w-[130px]">
             {info.getValue() as string}
@@ -341,8 +473,11 @@ export function GradeGrid({ classId }: GradeGridProps) {
       },
       {
         id: 'accommodations',
-        header: () => <span className="text-[9px]" title="התאמות">הת</span>,
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="הת" title="התאמות" filterConfig={FILTER_CONFIGS.accommodations} />
+        ),
         size: COL_ACCOM_W,
+        filterFn: accommodationFilter,
         cell: (info: CellContext<Student, unknown>) => {
           const accs = info.row.original.accommodations;
           if (!accs || accs.length === 0) return null;
@@ -355,18 +490,36 @@ export function GradeGrid({ classId }: GradeGridProps) {
       },
       {
         id: 'risk',
-        header: 'צפי',
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="צפי" filterConfig={FILTER_CONFIGS.risk} />
+        ),
         size: COL_RISK_W,
         accessorFn: (row: Student) => row.riskLevel,
+        filterFn: multiSelectFilter,
         cell: (info: CellContext<Student, unknown>) => (
           <RiskBadge level={info.row.original.riskLevel} />
         ),
       },
       {
+        id: 'excellence',
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label="מצ" title="הצטיינות" filterConfig={FILTER_CONFIGS.excellence} />
+        ),
+        size: COL_EXCEL_W,
+        accessorFn: (row: Student) => row.excellenceTier,
+        filterFn: multiSelectFilter,
+        cell: (info: CellContext<Student, unknown>) => (
+          <ExcellenceBadge tier={info.row.original.excellenceTier} />
+        ),
+      },
+      {
         id: 'weightedAvg',
-        header: 'ממ"ש',
+        header: (info: HeaderContext<Student, unknown>) => (
+          <FilterableHeader column={info.column} label='ממ"ש' filterConfig={FILTER_CONFIGS.weightedAvg} />
+        ),
         size: COL_AVG_W,
         accessorFn: (row: Student) => row.weightedAverage,
+        filterFn: rangeFilter,
         cell: (info: CellContext<Student, unknown>) => {
           const score = info.row.original.weightedAverage;
           const cellStyle = getScoreCellStyle(Math.round(score));
@@ -569,8 +722,23 @@ export function GradeGrid({ classId }: GradeGridProps) {
   const table = useReactTable({
     data: students,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
+
+  // Compute stats from filtered rows (or all if no filter)
+  const filteredStudents = useMemo(
+    () => table.getFilteredRowModel().rows.map((r) => r.original),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table.getFilteredRowModel().rows]
+  );
+
+  const { columnAverages, columnCounts, columnFailCounts, weightedAverage } = useMemo(
+    () => computeAllStats(filteredStudents, electiveSubjectIds),
+    [filteredStudents, electiveSubjectIds]
+  );
 
   if (students.length === 0) {
     return (
@@ -589,7 +757,8 @@ export function GradeGrid({ classId }: GradeGridProps) {
     COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W,               // name
     COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W,  // accommodations
     COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W, // risk
-    COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W + COL_RISK_W, // weightedAvg
+    COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W + COL_RISK_W, // excellence
+    COL_MATH_UNIT_W + COL_ENG_UNIT_W + COL_NUM_W + COL_NAME_W + COL_ACCOM_W + COL_RISK_W + COL_EXCEL_W, // weightedAvg
   ];
 
   function getStickyStyle(colIndex: number): React.CSSProperties | undefined {
@@ -637,6 +806,7 @@ export function GradeGrid({ classId }: GradeGridProps) {
     COL_NAME_W,
     COL_ACCOM_W,
     COL_RISK_W,
+    COL_EXCEL_W,
     COL_AVG_W,
   ];
 
@@ -687,13 +857,18 @@ export function GradeGrid({ classId }: GradeGridProps) {
           className={`border border-slate-200 px-1 py-1 text-center ${bgClass}`}
           style={{ ...getStickyStyle(5), width: frozenWidths[5], minWidth: frozenWidths[5] }}
         />
+        {/* excellence */}
+        <td
+          className={`border border-slate-200 px-1 py-1 text-center ${bgClass}`}
+          style={{ ...getStickyStyle(6), width: frozenWidths[6], minWidth: frozenWidths[6] }}
+        />
         {/* weightedAvg */}
         <td
           className={`border border-slate-200 px-1 py-1 text-center ${bgClass} font-bold text-xs tabular-nums`}
           style={{
-            ...getStickyStyle(6),
-            width: frozenWidths[6],
-            minWidth: frozenWidths[6],
+            ...getStickyStyle(7),
+            width: frozenWidths[7],
+            minWidth: frozenWidths[7],
             color: labelColor ?? TEXT_COLORS.average,
           }}
         >
@@ -707,6 +882,27 @@ export function GradeGrid({ classId }: GradeGridProps) {
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
+      {/* Filter toolbar — only visible when filters are active */}
+      {isFiltered && (
+        <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50 border-b border-blue-100" dir="rtl">
+          <div className="flex items-center gap-2">
+            <ListFilter className="size-3.5 text-blue-600" />
+            <span className="text-xs text-blue-700">
+              {columnFilters.length} {columnFilters.length === 1 ? 'סינון פעיל' : 'סינונים פעילים'}
+              {' · '}
+              <span className="text-blue-500">{filteredStudents.length} מתוך {students.length} תלמידים</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setColumnFilters([])}
+            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <X className="size-3" />
+            נקה הכל
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto scrollbar-thin">
         <table
           className="border-collapse text-xs"
@@ -805,7 +1001,7 @@ export function GradeGrid({ classId }: GradeGridProps) {
             {/* ── Summary: class average ────────────────────────── */}
             <tr className="bg-slate-100 border-t-2 border-slate-300">
               {renderSummaryFrozenCells(
-                'ממוצע כיתתי',
+                isFiltered ? 'ממוצע (מסונן)' : 'ממוצע כיתתי',
                 weightedAverage?.toFixed(1) ?? '—',
                 'bg-slate-100'
               )}
@@ -827,8 +1023,8 @@ export function GradeGrid({ classId }: GradeGridProps) {
             {/* ── Summary: exam count ───────────────────────────── */}
             <tr className="bg-slate-50">
               {renderSummaryFrozenCells(
-                'מספר נבחנים',
-                String(students.length),
+                isFiltered ? 'נבחנים (מסונן)' : 'מספר נבחנים',
+                isFiltered ? `${filteredStudents.length}/${students.length}` : String(students.length),
                 'bg-slate-50',
                 '#64748b'
               )}

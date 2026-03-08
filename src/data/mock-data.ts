@@ -17,6 +17,7 @@ import type {
 } from '@/types';
 import {
   RiskLevel,
+  ExcellenceTier,
   UnitLevel,
   EligibilityStatus,
   AccommodationType,
@@ -187,18 +188,21 @@ function pickNoteDate(): string {
 
 // ─── Score Generation Helpers ──────────────────────────────────────────────────
 
-function generateScore(isSpecialClass: boolean): number {
+function generateScore(isSpecialClass: boolean, talent: 'excellent' | 'normal' = 'normal'): number {
   const r = rng();
   if (isSpecialClass) {
-    // Special ed class: more failing, lower average
     if (r < 0.20) return randInt(30, 51);
     if (r < 0.35) return randInt(52, 54);
     if (r < 0.90) return randInt(55, 75);
     return randInt(76, 90);
   }
-  // Regular distribution: ~3% failing (<52), ~2% borderline (52-54), ~80% passing (55-89), ~15% excellence (90+)
-  // Per-subject failure rate is low so that across 7 core subjects,
-  // ~70% of students pass all and land at risk level 1.
+  if (talent === 'excellent') {
+    // High-performing students: mostly 85-100, occasionally dip to 75-84
+    if (r < 0.10) return randInt(75, 84);
+    if (r < 0.40) return randInt(85, 89);
+    return randInt(90, 100);
+  }
+  // Regular distribution
   if (r < 0.03) return randInt(30, 51);
   if (r < 0.05) return randInt(52, 54);
   if (r < 0.85) return randInt(55, 89);
@@ -223,29 +227,30 @@ function generatePassFailScore(isSpecialClass: boolean): number {
 
 function generateMathGrades(
   unitLevel: UnitLevel,
-  isSpecialClass: boolean
+  isSpecialClass: boolean,
+  talent: 'excellent' | 'normal' = 'normal'
 ): SubjectGrades {
   const components: Record<string, number | undefined> = {};
   let sofi: number;
 
   if (unitLevel === UnitLevel.UNITS_3) {
-    const q182 = generateScore(isSpecialClass);
-    const q381 = generateScore(isSpecialClass);
-    const q382 = generateScore(isSpecialClass);
+    const q182 = generateScore(isSpecialClass, talent);
+    const q381 = generateScore(isSpecialClass, talent);
+    const q382 = generateScore(isSpecialClass, talent);
     components['q182'] = q182;
     components['q381'] = q381;
     components['q382'] = q382;
     sofi = Math.round(q182 * 0.25 + q381 * 0.35 + q382 * 0.40);
   } else if (unitLevel === UnitLevel.UNITS_4) {
-    const q481 = generateScore(isSpecialClass);
-    const q482 = generateScore(isSpecialClass);
+    const q481 = generateScore(isSpecialClass, talent);
+    const q482 = generateScore(isSpecialClass, talent);
     components['q481'] = q481;
     components['q482'] = q482;
     sofi = Math.round(q481 * 0.65 + q482 * 0.35);
   } else {
     // 5-unit
-    const q581 = generateScore(isSpecialClass);
-    const q582 = generateScore(isSpecialClass);
+    const q581 = generateScore(isSpecialClass, talent);
+    const q582 = generateScore(isSpecialClass, talent);
     components['q581'] = q581;
     components['q582'] = q582;
     sofi = Math.round(q581 * 0.60 + q582 * 0.40);
@@ -262,26 +267,27 @@ function generateMathGrades(
 
 function generateEnglishGrades(
   unitLevel: UnitLevel,
-  isSpecialClass: boolean
+  isSpecialClass: boolean,
+  talent: 'excellent' | 'normal' = 'normal'
 ): SubjectGrades {
   const components: Record<string, number | undefined> = {};
   let sofi: number;
 
   if (unitLevel === UnitLevel.UNITS_3) {
-    const modA = generateScore(isSpecialClass);
-    const modB = generateScore(isSpecialClass);
-    const modC = generateScore(isSpecialClass);
-    const oral = generateScore(isSpecialClass);
+    const modA = generateScore(isSpecialClass, talent);
+    const modB = generateScore(isSpecialClass, talent);
+    const modC = generateScore(isSpecialClass, talent);
+    const oral = generateScore(isSpecialClass, talent);
     components['modA'] = modA;
     components['modB'] = modB;
     components['modC'] = modC;
     components['oral'] = oral;
     sofi = Math.round(modA * 0.27 + modB * 0.26 + modC * 0.27 + oral * 0.20);
   } else if (unitLevel === UnitLevel.UNITS_4) {
-    const modA = generateScore(isSpecialClass);
-    const modB = generateScore(isSpecialClass);
-    const modD = generateScore(isSpecialClass);
-    const oral = generateScore(isSpecialClass);
+    const modA = generateScore(isSpecialClass, talent);
+    const modB = generateScore(isSpecialClass, talent);
+    const modD = generateScore(isSpecialClass, talent);
+    const oral = generateScore(isSpecialClass, talent);
     components['modA'] = modA;
     components['modB'] = modB;
     components['modD'] = modD;
@@ -289,10 +295,10 @@ function generateEnglishGrades(
     sofi = Math.round(modA * 0.27 + modB * 0.26 + modD * 0.27 + oral * 0.20);
   } else {
     // 5-unit
-    const modE = generateScore(isSpecialClass);
-    const modF = generateScore(isSpecialClass);
-    const modG = generateScore(isSpecialClass);
-    const oral = generateScore(isSpecialClass);
+    const modE = generateScore(isSpecialClass, talent);
+    const modF = generateScore(isSpecialClass, talent);
+    const modG = generateScore(isSpecialClass, talent);
+    const oral = generateScore(isSpecialClass, talent);
     components['modE'] = modE;
     components['modF'] = modF;
     components['modG'] = modG;
@@ -305,7 +311,8 @@ function generateEnglishGrades(
 
 function generateSubjectGrades(
   subjectId: string,
-  isSpecialClass: boolean
+  isSpecialClass: boolean,
+  talent: 'excellent' | 'normal' = 'normal'
 ): SubjectGrades {
   const sub = subjects.find((s) => s.id === subjectId);
   if (!sub) return { final: 0 };
@@ -320,13 +327,13 @@ function generateSubjectGrades(
   // (see generateMathGrades / generateEnglishGrades called from student generation)
   if (subjectId === 'math' || subjectId === 'english') {
     // Fallback: should not reach here in normal flow
-    const score = generateScore(isSpecialClass);
+    const score = generateScore(isSpecialClass, talent);
     return { final: score };
   }
 
   // Standard subjects with internal/external weights
-  const internalScore = generateScore(isSpecialClass);
-  const externalScore = generateScore(isSpecialClass);
+  const internalScore = generateScore(isSpecialClass, talent);
+  const externalScore = generateScore(isSpecialClass, talent);
   const final = Math.round(
     internalScore * sub.weights.internal + externalScore * sub.weights.external
   );
@@ -340,24 +347,28 @@ function computeWeightedAverage(
   mathLevel: UnitLevel,
   englishLevel: UnitLevel
 ): number {
-  const mathFinal = grades['math']?.final ?? 0;
-  const historyFinal = grades['history']?.final ?? 0;
-  const civicsFinal = grades['civics']?.final ?? 0;
-  const tanakhFinal = grades['tanakh']?.final ?? 0;
-  const literatureFinal = grades['literature']?.final ?? 0;
-  const languageFinal = grades['language']?.final ?? 0;
-  const englishFinal = grades['english']?.final ?? 0;
+  // Variable denominator: only count units for subjects the student actually has
+  const subjects: { id: string; units: number }[] = [
+    { id: 'math', units: mathLevel },
+    { id: 'history', units: 2 },
+    { id: 'civics', units: 2 },
+    { id: 'tanakh', units: 2 },
+    { id: 'literature', units: 2 },
+    { id: 'language', units: 2 },
+    { id: 'english', units: englishLevel },
+  ];
 
-  const totalUnits = mathLevel + 2 + 2 + 2 + 2 + 2 + englishLevel;
-  const weightedSum =
-    mathFinal * mathLevel +
-    historyFinal * 2 +
-    civicsFinal * 2 +
-    tanakhFinal * 2 +
-    literatureFinal * 2 +
-    languageFinal * 2 +
-    englishFinal * englishLevel;
+  let totalUnits = 0;
+  let weightedSum = 0;
+  for (const { id, units } of subjects) {
+    const final = grades[id]?.final;
+    if (final !== undefined && final > 0) {
+      weightedSum += final * units;
+      totalUnits += units;
+    }
+  }
 
+  if (totalUnits === 0) return 0;
   return Math.round((weightedSum / totalUnits) * 100) / 100;
 }
 
@@ -380,13 +391,19 @@ function determineRiskLevel(
   // 1 failure with low average -> risk
   if (failCount === 1 && weightedAvg < 65) return RiskLevel.LEVEL_3;
   if (failCount === 1) return RiskLevel.LEVEL_2;
-  // 0 failures: check excellence risk tiers (risk to losing excellence honors)
-  // L4: borderline for Aleph/Bet honors tier (close to 90 threshold)
-  if (weightedAvg >= 86 && weightedAvg <= 90) return RiskLevel.LEVEL_4;
-  // L5: borderline for Gimel honors tier (close to 85 threshold)
-  if (weightedAvg >= 81 && weightedAvg <= 85) return RiskLevel.LEVEL_5;
-  // 0 failures, other average -> on track
+  // 0 failures -> on track
   return RiskLevel.LEVEL_1;
+}
+
+// ─── Excellence Tier Determination ─────────────────────────────────────────────
+
+function determineExcellenceTier(weightedAvg: number): ExcellenceTier {
+  // Metzuyanut thresholds: 1-Aleph >= 96, 1-Bet >= 90, 1-Gimel >= 85
+  if (weightedAvg >= 96) return ExcellenceTier.ALEPH;
+  if (weightedAvg >= 90) return ExcellenceTier.BET;
+  if (weightedAvg >= 85) return ExcellenceTier.GIMEL;
+  if (weightedAvg >= 81) return ExcellenceTier.BORDER_GIMEL;
+  return ExcellenceTier.NONE;
 }
 
 // ─── Eligibility Status Determination ──────────────────────────────────────────
@@ -478,17 +495,32 @@ function generateStudentsForClass(schoolClass: SchoolClass): Student[] {
       englishLevel = er < 0.40 ? UnitLevel.UNITS_5 : er < 0.75 ? UnitLevel.UNITS_4 : UnitLevel.UNITS_3;
     }
 
+    // ~8% of regular students are consistently high-performing ("excellent" talent)
+    const talent: 'excellent' | 'normal' = (!isSpecial && rng() < 0.08) ? 'excellent' : 'normal';
+
     // Generate core weighted grades
     const grades: Record<string, SubjectGrades> = {};
 
     // Math and English use multi-component scoring based on unit level
-    grades['math'] = generateMathGrades(mathLevel, isSpecial);
-    grades['english'] = generateEnglishGrades(englishLevel, isSpecial);
+    grades['math'] = generateMathGrades(mathLevel, isSpecial, talent);
+    grades['english'] = generateEnglishGrades(englishLevel, isSpecial, talent);
 
-    // Other core subjects use standard internal/external weighting
+    // Other core subjects use standard internal/external weighting.
+    // ~18% of regular students are missing 1-3 core subjects (simulating
+    // students who haven't yet sat for that exam). This drives the
+    // "What If Projections" feature which projects scores for missing subjects.
     const otherCoreIds = ['history', 'civics', 'tanakh', 'literature', 'language'];
+    const missingCoreCount =
+      !isSpecial && talent === 'normal' && rng() < 0.18
+        ? (rng() < 0.6 ? 1 : rng() < 0.85 ? 2 : 3)
+        : 0;
+    // Pick which core subjects to skip (shuffle then take first N)
+    const coreShuffled = [...otherCoreIds].sort(() => rng() - 0.5);
+    const missingCoreSet = new Set(coreShuffled.slice(0, missingCoreCount));
+
     for (const subId of otherCoreIds) {
-      grades[subId] = generateSubjectGrades(subId, isSpecial);
+      if (missingCoreSet.has(subId)) continue; // leave this subject ungraded
+      grades[subId] = generateSubjectGrades(subId, isSpecial, talent);
     }
 
     // Generate core non-weighted (required for eligibility) grades
@@ -502,7 +534,7 @@ function generateStudentsForClass(schoolClass: SchoolClass): Student[] {
       // Special class (class 12): Communications + 0-1 other elective
       // Class 12's pool is just ['communications'], so assign it
       for (const elId of electivePool) {
-        grades[elId] = generateSubjectGrades(elId, isSpecial);
+        grades[elId] = generateSubjectGrades(elId, isSpecial, talent);
       }
     } else {
       // Regular student: 1-3 electives from their class's available pool
@@ -511,15 +543,16 @@ function generateStudentsForClass(schoolClass: SchoolClass): Student[] {
       const numElectives = maxElectives <= 1 ? 1 : (r < 0.4 ? 1 : r < 0.8 ? 2 : Math.min(3, maxElectives));
       const shuffled = [...electivePool].sort(() => rng() - 0.5);
       for (let e = 0; e < numElectives; e++) {
-        grades[shuffled[e]] = generateSubjectGrades(shuffled[e], isSpecial);
+        grades[shuffled[e]] = generateSubjectGrades(shuffled[e], isSpecial, talent);
       }
     }
 
     // Compute weighted average from core grades
     const weightedAverage = computeWeightedAverage(grades, mathLevel, englishLevel);
 
-    // Determine risk and eligibility based on actual grades
+    // Determine risk, excellence tier, and eligibility based on actual grades
     const riskLevel = determineRiskLevel(grades, weightedAverage);
+    const excellenceTier = determineExcellenceTier(weightedAverage);
     const eligibilityStatus = determineEligibility(grades);
 
     // Accommodations (more likely for special class)
@@ -564,6 +597,7 @@ function generateStudentsForClass(schoolClass: SchoolClass): Student[] {
       englishUnitLevel: englishLevel,
       accommodations,
       riskLevel,
+      excellenceTier,
       eligibilityStatus,
       weightedAverage,
       grades,

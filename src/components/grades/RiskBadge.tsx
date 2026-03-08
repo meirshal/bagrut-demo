@@ -19,9 +19,6 @@ export function RiskBadge({ level }: RiskBadgeProps) {
     );
   }
 
-  // Levels 2 and 4: bold text per spreadsheet spec
-  const isBold = level === 2 || level === 4;
-
   if (level === 3) {
     return (
       <span
@@ -35,7 +32,7 @@ export function RiskBadge({ level }: RiskBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] ${isBold ? 'font-bold' : 'font-medium'}`}
+      className="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold"
       style={style}
     >
       {level}

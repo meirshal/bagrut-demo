@@ -1,7 +1,7 @@
 // Bagrut Tracking System - Color Design Tokens
 // Mapped from 15 background colors + 4 font colors from the Excel specification
 
-import { RiskLevel } from '@/types';
+import { RiskLevel, ExcellenceTier } from '@/types';
 
 // ─── Background Color Tokens ───────────────────────────────────────────────────
 
@@ -75,12 +75,20 @@ export const RISK_COLORS: Record<
   [RiskLevel.LEVEL_1]: { bg: '#C2D69B', text: '#000000' },
   [RiskLevel.LEVEL_2]: { bg: 'transparent', text: '#E36C09' },
   [RiskLevel.LEVEL_3]: { bg: '#FFC000', text: '#000000' },
-  [RiskLevel.LEVEL_4]: { bg: 'transparent', text: '#FF0000' },
-  [RiskLevel.LEVEL_5]: {
-    bg: '#FBD4B4',
-    text: '#FF0000',
-    border: '2px solid #FF0000',
-  },
+};
+
+// ─── Excellence Tier Colors ───────────────────────────────────────────────────
+
+export const EXCELLENCE_COLORS: Record<
+  ExcellenceTier,
+  { bg: string; text: string; border?: string }
+> = {
+  [ExcellenceTier.NONE]: { bg: 'transparent', text: '#94a3b8' },
+  [ExcellenceTier.BORDER_GIMEL]: { bg: '#ede9fe', text: '#7c3aed', border: '1px dashed #7c3aed' },
+  [ExcellenceTier.GIMEL]: { bg: '#ddd6fe', text: '#6d28d9' },
+  [ExcellenceTier.BORDER_BET]: { bg: '#c7d2fe', text: '#4338ca', border: '1px dashed #4338ca' },
+  [ExcellenceTier.BET]: { bg: '#a5b4fc', text: '#3730a3' },
+  [ExcellenceTier.ALEPH]: { bg: '#fbbf24', text: '#78350f' },
 };
 
 // ─── Period Header Colors ──────────────────────────────────────────────────────
@@ -132,6 +140,22 @@ export function getRiskBadgeStyle(level: RiskLevel): {
   border?: string;
 } {
   const colors = RISK_COLORS[level];
+  return {
+    backgroundColor: colors.bg,
+    color: colors.text,
+    ...(colors.border ? { border: colors.border } : {}),
+  };
+}
+
+/**
+ * Returns inline style object for an excellence tier badge.
+ */
+export function getExcellenceBadgeStyle(tier: ExcellenceTier): {
+  backgroundColor: string;
+  color: string;
+  border?: string;
+} {
+  const colors = EXCELLENCE_COLORS[tier];
   return {
     backgroundColor: colors.bg,
     color: colors.text,

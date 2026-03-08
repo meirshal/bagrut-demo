@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { ClassHeader } from '@/components/grades/ClassHeader';
+import { GridLegend } from '@/components/grades/GridLegend';
 import { GradeGrid } from '@/components/grades/GradeGrid';
 
 export function ClassGradeGrid() {
@@ -26,6 +27,7 @@ export function ClassGradeGrid() {
         </Link>
       </div>
       <ClassHeader classId={classId} />
+      <GridLegend />
       <GradeGrid classId={classId} />
     </div>
   );
