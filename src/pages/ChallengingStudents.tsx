@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getChallengeStudents, getClasses } from '@/data/mock-data';
+import { getChallengeStudents, getClasses, getExamPeriods } from '@/data/mock-data';
 import { ChallengeCategory } from '@/types';
 import type { Student } from '@/types';
 import { RiskBadge } from '@/components/grades/RiskBadge';
@@ -18,26 +18,33 @@ import {
 interface ColumnConfig {
   category: string;
   title: string;
+  /** Exam period this challenge category relates to */
+  periodId: string;
   headerColor: string;
   borderColor: string;
 }
+
+const examPeriods = getExamPeriods();
 
 const COLUMNS: ColumnConfig[] = [
   {
     category: ChallengeCategory.ESPECIALLY_CHALLENGING,
     title: 'מאתגרים במיוחד',
+    periodId: 'summer-12',
     headerColor: 'bg-rose-100 text-rose-800',
     borderColor: 'border-t-rose-500',
   },
   {
     category: ChallengeCategory.WILL_PROBABLY_PASS,
-    title: 'יעברו כנראה',
+    title: 'צפויים לעבור',
+    periodId: 'winter-12',
     headerColor: 'bg-amber-100 text-amber-800',
     borderColor: 'border-t-amber-500',
   },
   {
     category: ChallengeCategory.CLOSE_FOLLOWUP,
-    title: 'לטיפול צמוד',
+    title: 'דורשים מעקב צמוד',
+    periodId: 'corrections',
     headerColor: 'bg-blue-100 text-blue-800',
     borderColor: 'border-t-blue-500',
   },
@@ -51,10 +58,11 @@ function countFailingSubjects(student: Student): number {
   ).length;
 }
 
-function StudentCard({ student }: { student: Student }) {
+function StudentCard({ student, periodId }: { student: Student; periodId: string }) {
   const classes = getClasses();
   const studentClass = classes.find((c) => c.id === student.classId);
   const failCount = countFailingSubjects(student);
+  const period = examPeriods.find((p) => p.id === periodId);
   const notesPreview =
     student.notes.length > 0
       ? student.notes[0].text.length > 50
@@ -73,13 +81,18 @@ function StudentCard({ student }: { student: Student }) {
             <RiskBadge level={student.riskLevel} />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-[10px]">
               {studentClass?.displayName ?? student.classId}
             </Badge>
             {failCount > 0 && (
               <Badge variant="destructive" className="text-[10px]">
                 {failCount} נכשלים
+              </Badge>
+            )}
+            {period && (
+              <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-500">
+                {period.shortName}
               </Badge>
             )}
           </div>
@@ -151,6 +164,7 @@ export function ChallengingStudents() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {COLUMNS.map((col) => {
           const students = getStudentsForColumn(col.category);
+          const period = examPeriods.find((p) => p.id === col.periodId);
           return (
             <div
               key={col.category}
@@ -160,7 +174,12 @@ export function ChallengingStudents() {
               <div
                 className={`flex items-center justify-between px-4 py-3 ${col.headerColor}`}
               >
-                <h2 className="text-sm font-bold">{col.title}</h2>
+                <div>
+                  <h2 className="text-sm font-bold">{col.title}</h2>
+                  {period && (
+                    <span className="text-[10px] opacity-70">{period.name}</span>
+                  )}
+                </div>
                 <Badge variant="secondary" className="text-[10px]">
                   {students.length}
                 </Badge>
@@ -174,7 +193,7 @@ export function ChallengingStudents() {
                   </p>
                 ) : (
                   students.map((student) => (
-                    <StudentCard key={student.id} student={student} />
+                    <StudentCard key={student.id} student={student} periodId={col.periodId} />
                   ))
                 )}
               </div>

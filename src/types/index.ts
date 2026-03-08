@@ -51,7 +51,8 @@ export interface SubjectGrades {
   internal?: number;
   external?: number;
   final: number;
-  components?: Record<string, number>;
+  /** Sub-scores: questionnaire results (math), module scores (english), etc. */
+  components?: Record<string, number | undefined>;
 }
 
 export interface Note {
@@ -86,6 +87,8 @@ export interface SchoolClass {
   homeroomTeacher: string;
   studentCount: number;
   isSpecial: boolean;
+  /** IDs of elective subjects available for students in this class. */
+  electiveSubjectIds: string[];
 }
 
 export interface Subject {
@@ -93,7 +96,12 @@ export interface Subject {
   name: string;
   questionnaireCode: string;
   unitLevel?: UnitLevel;
+  /** Whether this subject counts toward the weighted average (core-weighted subjects). */
   isCore: boolean;
+  /** Whether passing this subject is required for Bagrut eligibility (pass/fail gate). */
+  isRequired: boolean;
+  /** Whether this is a pass/fail subject (not scored on the 0-100 scale in the average). */
+  isPassFail?: boolean;
   weights: {
     internal: number;
     external: number;
@@ -118,6 +126,25 @@ export interface EligibilityStats {
   total: number;
 }
 
+/** Failure-count categorization scheme stats */
+export interface FailureStats {
+  noFailures: number;
+  failures1: number;
+  failures2: number;
+  failures3: number;
+  failures4: number;
+  failures5Plus: number;
+  nonMatriculation: number;
+  total: number;
+}
+
+/** The two categorization schemes for the rikuz matrix */
+export const RikuzScheme = {
+  EXAM_MISSING: 'exam_missing',
+  FAILURE_COUNT: 'failure_count',
+} as const;
+export type RikuzScheme = (typeof RikuzScheme)[keyof typeof RikuzScheme];
+
 export interface YearComparison {
   year: string;
   eligibilityRate: number;
@@ -130,5 +157,18 @@ export interface RikuzRow {
   classId: string;
   className: string;
   studentCount: number;
+  isSpecialClass: boolean;
   stats: EligibilityStats;
+  failureStats: FailureStats;
+}
+
+/** KPI data for a specific period */
+export interface PeriodKPIData {
+  totalStudents: number;
+  fullEligible: number;
+  eligiblePct: string;
+  atRisk: number;
+  atRiskPct: string;
+  excellence: number;
+  excellencePct: string;
 }

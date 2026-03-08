@@ -56,7 +56,7 @@ export const TEXT_COLORS = {
 // ─── Score Color Tokens ────────────────────────────────────────────────────────
 
 export const SCORE_COLORS = {
-  /** Failing score (below 52) - red font */
+  /** Failing score (below 55) - red font */
   failing: '#FF0000',
   /** Excellence score (90+) - blue font */
   excellence: '#548DD4',

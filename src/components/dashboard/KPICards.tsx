@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { Users, Award, AlertTriangle, Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { getAllStudents, getYearComparisons } from '@/data/mock-data';
-import { RiskLevel } from '@/types';
+import { getKPIByPeriod, getYearComparisons } from '@/data/mock-data';
 
 interface KPICardProps {
   icon: React.ReactNode;
@@ -50,27 +49,14 @@ function KPICard({ icon, title, value, subtitle, trend, accentColor, accentBg }:
   );
 }
 
-export function KPICards() {
+interface KPICardsProps {
+  selectedPeriod: string;
+}
+
+export function KPICards({ selectedPeriod }: KPICardsProps) {
   const data = useMemo(() => {
-    const students = getAllStudents();
+    const kpi = getKPIByPeriod(selectedPeriod);
     const yearComps = getYearComparisons();
-    const totalStudents = students.length;
-
-    // Full bagrut eligible (FULL_BAGRUT + FULL_DESPITE_MISSING)
-    const fullEligible = students.filter(
-      (s) =>
-        s.eligibilityStatus === 'FULL_BAGRUT' ||
-        s.eligibilityStatus === 'FULL_DESPITE_MISSING'
-    ).length;
-    const eligiblePct = ((fullEligible / totalStudents) * 100).toFixed(1);
-
-    // At-risk students (risk levels 2-5)
-    const atRisk = students.filter((s) => s.riskLevel >= RiskLevel.LEVEL_2).length;
-    const atRiskPct = ((atRisk / totalStudents) * 100).toFixed(1);
-
-    // Excellence candidates (weighted average >= 90)
-    const excellence = students.filter((s) => s.weightedAverage >= 90).length;
-    const excellencePct = ((excellence / totalStudents) * 100).toFixed(1);
 
     // Trends: compare current year rates to previous year
     const currentYear = yearComps[yearComps.length - 1];
@@ -79,17 +65,11 @@ export function KPICards() {
     const excellenceTrendDiff = (currentYear.excellenceRate - previousYear.excellenceRate).toFixed(1);
 
     return {
-      totalStudents,
-      fullEligible,
-      eligiblePct,
-      atRisk,
-      atRiskPct,
-      excellence,
-      excellencePct,
+      ...kpi,
       eligibilityTrendDiff,
       excellenceTrendDiff,
     };
-  }, []);
+  }, [selectedPeriod]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

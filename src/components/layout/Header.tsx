@@ -7,8 +7,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getExamPeriods } from '@/data/mock-data';
 
-export function Header() {
+interface HeaderProps {
+  selectedPeriod?: string;
+  onPeriodChange?: (periodId: string) => void;
+}
+
+export function Header({ selectedPeriod, onPeriodChange }: HeaderProps) {
+  const periods = getExamPeriods();
+  const currentPeriod = periods.find((p) => p.id === selectedPeriod) ?? periods[periods.length - 1];
+
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-white/80 backdrop-blur-sm px-6">
       {/* Right side - school name */}
@@ -31,15 +40,20 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs">
               <CalendarDays className="size-3.5" />
-              אחרי חורף+תיקונים
+              {currentPeriod.name}
               <ChevronDown className="size-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>אחרי קיץ יא</DropdownMenuItem>
-            <DropdownMenuItem>אחרי קיץ יב</DropdownMenuItem>
-            <DropdownMenuItem>אחרי חורף יב</DropdownMenuItem>
-            <DropdownMenuItem>אחרי חורף+תיקונים</DropdownMenuItem>
+            {periods.map((period) => (
+              <DropdownMenuItem
+                key={period.id}
+                onClick={() => onPeriodChange?.(period.id)}
+                className={period.id === currentPeriod.id ? 'bg-accent font-semibold' : ''}
+              >
+                {period.name}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

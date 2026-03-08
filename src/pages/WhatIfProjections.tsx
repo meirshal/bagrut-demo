@@ -115,7 +115,11 @@ function determineProjectedEligibility(
     if (grades[id] && grades[id].final < 55) failCount++;
   }
 
-  const electiveIds = ['cs', 'physics', 'biology', 'chemistry', 'geography'];
+  const electiveIds = [
+    'cs', 'physics', 'biology', 'chemistry', 'geography',
+    'management', 'social-sciences', 'jewish-law', 'spanish',
+    'arabic', 'french', 'film', 'medical-sciences', 'communications',
+  ];
   const hasElective = electiveIds.some(
     (id) => grades[id] && grades[id].final >= 55
   );

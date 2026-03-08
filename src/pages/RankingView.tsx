@@ -69,6 +69,16 @@ interface RankedStudent extends Student {
   className: string;
 }
 
+const CORE_SUBJECT_COLUMNS = [
+  { id: 'math', name: 'מתמטיקה' },
+  { id: 'history', name: 'היסטוריה' },
+  { id: 'civics', name: 'אזרחות' },
+  { id: 'tanakh', name: 'תנ"ך' },
+  { id: 'literature', name: 'ספרות' },
+  { id: 'language', name: 'לשון' },
+  { id: 'english', name: 'אנגלית' },
+] as const;
+
 const columnHelper = createColumnHelper<RankedStudent>();
 
 export function RankingView() {
@@ -162,26 +172,38 @@ export function RankingView() {
         size: 150,
       }),
       columnHelper.accessor('mathUnitLevel', {
-        header: 'מתמטיקה',
+        header: 'מתמ\' יח"ל',
         cell: (info) => (
-          <span className="text-xs tabular-nums">{info.getValue()} יח&quot;ל</span>
+          <span className="text-xs tabular-nums">{info.getValue()}</span>
         ),
-        size: 80,
+        size: 55,
       }),
       columnHelper.accessor('englishUnitLevel', {
-        header: 'אנגלית',
+        header: 'אנג\' יח"ל',
         cell: (info) => (
-          <span className="text-xs tabular-nums">{info.getValue()} יח&quot;ל</span>
+          <span className="text-xs tabular-nums">{info.getValue()}</span>
         ),
-        size: 80,
+        size: 55,
       }),
+      // Core subject final score columns
+      ...CORE_SUBJECT_COLUMNS.map((sub) =>
+        columnHelper.display({
+          id: `grade_${sub.id}`,
+          header: sub.name,
+          cell: ({ row }) => {
+            const grade = row.original.grades[sub.id];
+            return <ScoreCell score={grade?.final} />;
+          },
+          size: 60,
+        })
+      ),
       columnHelper.accessor('weightedAverage', {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium hover:text-blue-700 transition-colors"
             onClick={() => column.toggleSorting()}
           >
-            ממוצע משוקלל
+            ממוצע
             <ArrowUpDown className={`h-3 w-3 ${column.getIsSorted() ? 'text-blue-600' : 'text-slate-400'}`} />
           </button>
         ),
@@ -190,7 +212,7 @@ export function RankingView() {
             <ScoreCell score={Math.round(info.getValue())} />
           </span>
         ),
-        size: 100,
+        size: 70,
       }),
       columnHelper.accessor('eligibilityStatus', {
         header: 'זכאות',
@@ -303,13 +325,13 @@ export function RankingView() {
       </div>
 
       {/* Ranking Table */}
-      <div className="rounded-xl border bg-card ring-1 ring-foreground/10 overflow-hidden">
+      <div className="rounded-xl border bg-card ring-1 ring-foreground/10 overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="bg-slate-50">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-right">
+                  <TableHead key={header.id} className="text-right text-[11px] px-2">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -335,7 +357,7 @@ export function RankingView() {
               table.getRowModel().rows.map((row, idx) => (
                 <TableRow key={row.id} className={`transition-colors hover:bg-blue-50/40 ${idx % 2 === 1 ? 'bg-slate-50/40' : ''}`}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="px-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
