@@ -401,6 +401,7 @@ function determineExcellenceTier(weightedAvg: number): ExcellenceTier {
   // Metzuyanut thresholds: 1-Aleph >= 96, 1-Bet >= 90, 1-Gimel >= 85
   if (weightedAvg >= 96) return ExcellenceTier.ALEPH;
   if (weightedAvg >= 90) return ExcellenceTier.BET;
+  if (weightedAvg >= 86) return ExcellenceTier.BORDER_BET;
   if (weightedAvg >= 85) return ExcellenceTier.GIMEL;
   if (weightedAvg >= 81) return ExcellenceTier.BORDER_GIMEL;
   return ExcellenceTier.NONE;

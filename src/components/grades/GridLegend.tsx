@@ -57,8 +57,12 @@ export function GridLegend() {
                 <span className="text-slate-600">מצויינות 1-ג (85+)</span>
               </div>
               <div className="flex items-center gap-1.5">
+                <ExcellenceBadge tier={ExcellenceTier.BORDER_BET} />
+                <span className="text-slate-600">גבול מצויינות 1-ב (86-89)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <ExcellenceBadge tier={ExcellenceTier.BORDER_GIMEL} />
-                <span className="text-slate-600">גבול מצויינות (81-84)</span>
+                <span className="text-slate-600">גבול מצויינות 1-ג (81-84)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <ExcellenceBadge tier={ExcellenceTier.NONE} />

@@ -38,8 +38,9 @@ const EXCELLENCE_CONFIG: {
 }[] = [
   { tier: ExcellenceTier.ALEPH, label: 'א - מצויינות 1-א (96+)', color: '#78350f', bgColor: '#fef3c7' },
   { tier: ExcellenceTier.BET, label: 'ב - מצויינות 1-ב (90+)', color: '#3730a3', bgColor: '#c7d2fe' },
+  { tier: ExcellenceTier.BORDER_BET, label: 'ב? - גבול מצויינות 1-ב (86-89)', color: '#4338ca', bgColor: '#e0e7ff' },
   { tier: ExcellenceTier.GIMEL, label: 'ג - מצויינות 1-ג (85+)', color: '#6d28d9', bgColor: '#ddd6fe' },
-  { tier: ExcellenceTier.BORDER_GIMEL, label: 'ג? - גבול מצויינות (81-84)', color: '#7c3aed', bgColor: '#ede9fe' },
+  { tier: ExcellenceTier.BORDER_GIMEL, label: 'ג? - גבול מצויינות 1-ג (81-84)', color: '#7c3aed', bgColor: '#ede9fe' },
   { tier: ExcellenceTier.NONE, label: 'ללא הצטיינות', color: '#64748b', bgColor: '#f1f5f9' },
 ];
 
