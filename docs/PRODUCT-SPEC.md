@@ -1413,6 +1413,144 @@ When a new exam period becomes active:
 - Corrections have a defined window (the "after winter + corrections" period).
 - The system tracks both original and corrected scores in the Grade entity (via audit trail).
 
+### 5.7 Configurable Business Rules [NOT YET IMPLEMENTED]
+
+The following business rules are configurable by administrators and coordinators through a dedicated **Settings > Business Rules** screen. Each rule has a system default (matching the current spreadsheet behavior) and can be overridden per school, per academic year.
+
+#### 5.7.1 Passing Threshold
+
+| Setting | Default | Configurable By | Scope |
+|---------|---------|-----------------|-------|
+| Global passing grade | 55 | Admin | School-wide |
+| Per-subject override | None | Admin | Per subject |
+
+The passing threshold determines: failing score color coding (red font), eligibility calculations, and risk level auto-suggestions. Some accommodated exams or specific subjects may have different thresholds per Ministry policy.
+
+#### 5.7.2 Excellence Tier Thresholds
+
+| Tier | Default Threshold | Configurable By | Notes |
+|------|-------------------|-----------------|-------|
+| Metzuyanut 1-Aleph | >= 96 | Admin | Highest honors |
+| Metzuyanut 1-Bet | >= 90 | Admin | Second tier |
+| Border Bet (proximity alert) | >= 86 | Coordinator | Students close to Bet threshold |
+| Metzuyanut 1-Gimel | >= 85 | Admin | Third tier |
+| Border Gimel (proximity alert) | >= 81 | Coordinator | Students close to Gimel threshold |
+
+The border tiers are configurable separately from the official tiers since they represent the school's proactive intervention range, not Ministry definitions.
+
+#### 5.7.3 Subject Weight Formulas
+
+Managed via **Settings > Subject and Formula Management**. Each subject defines:
+
+- **Component list:** Which questionnaire codes / exam parts make up the subject
+- **Weight per component:** Percentage weight in the final calculated score (must sum to 100%)
+- **Weight variants:** Support for alternative weight sets (e.g., CS 70/30 vs. 76/24) selectable per class or student
+
+Weights are locked per academic year once scores are entered to prevent retroactive recalculation without an audit trail. Changes apply to future periods only, unless an admin explicitly triggers a full recalculation with logged justification.
+
+#### 5.7.4 Risk Level Auto-Suggestion Rules
+
+The system auto-suggests risk levels but coordinators can override. The suggestion rules are configurable:
+
+| Parameter | Default | Configurable By |
+|-----------|---------|-----------------|
+| Failure count thresholds | 0 = on track, 1 = risk, 2+ = high risk | Coordinator |
+| Weighted average cutoff for risk escalation | 65 (1 failure + avg < 65 → high risk) | Coordinator |
+| Enable/disable auto-suggestion | Enabled | Coordinator |
+| Require reason for manual override | Yes | Admin |
+
+#### 5.7.5 Weighted Average — Subject Inclusion
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Core subjects included in weighted average | Math, History, Civics, Tanakh, Literature, Language, English | Admin |
+| Unit weight per subject | Math: 3/4/5, English: 3/4/5, all others: 2 | Admin |
+| Include electives in "overall" average | Yes (separate metric) | Coordinator |
+| Primary display metric | Standard (core only) | Coordinator |
+| Variable denominator (skip missing subjects) | Enabled | Admin |
+
+#### 5.7.6 Eligibility Determination Rules
+
+| Rule | Default | Configurable By | Notes |
+|------|---------|-----------------|-------|
+| Mandatory core subjects for eligibility | All 7 core subjects must be passed | Admin | List of subject IDs |
+| Additional required completions | General Studies, Intro Sciences, PE, Community Service | Admin | Pass or completion |
+| Elective requirement | At least one 5-unit elective passed | Admin | Can be disabled for specific tracks |
+| "Full Bagrut despite missing exam" policy | Enabled for non-core subjects | Admin | Ministry policy toggle |
+| Non-matriculation exclusion from eligibility stats | Enabled | Admin | Per-student flag |
+
+#### 5.7.7 Score Color Coding Thresholds
+
+| Threshold | Default | Configurable By | Visual Treatment |
+|-----------|---------|-----------------|-----------------|
+| Failing score upper bound | < 55 (uses passing threshold) | Linked to 5.7.1 | Red font |
+| Borderline range — close | 52-53 | Coordinator | Light blue background + red font |
+| Borderline range — very close | 54 | Coordinator | Cyan background + red font |
+| Excellence indicator | >= 90 | Coordinator | Blue font |
+
+These thresholds control the color-coded visual indicators in all grade grid views. The failing threshold is always linked to the global passing threshold (5.7.1).
+
+#### 5.7.8 What-If Projection Settings
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Projection offset | -5 (highest score minus 5) | Coordinator |
+| Student inclusion filter | Students with missing exams and room for improvement | Coordinator |
+| Show projected excellence tier | Yes | Coordinator |
+| Allow per-student offset override | Yes | Coordinator |
+
+#### 5.7.9 Class Exclusion Rules
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Exclude from quality metrics | Per-class toggle (default: only Class 12) | Admin |
+| Exclude from school-wide ranking | Per-class toggle (default: none excluded, but filterable) | Admin |
+| Exclude from year-over-year comparison | Follows quality metrics toggle | Admin |
+
+#### 5.7.10 Exam Period Definitions
+
+Managed via **Settings > Academic Year Management**. Per academic year:
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Number of periods | 4 | Admin |
+| Period names | Summer 11th, Summer 12th, Winter 12th, Corrections | Admin |
+| Period date ranges | Admin-defined | Admin |
+| Period ordering | Sequential | Admin |
+| Active period | Most recent | Coordinator |
+| Allow corrections period | Yes | Admin |
+
+#### 5.7.11 Challenging Student Categories
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Category list | "מאתגרים במיוחד" (Especially challenging), "יעברו כנראה" (Will probably pass), "מעקב צמוד" (Close follow-up) | Coordinator |
+| Category colors | Red, Amber, Blue | Coordinator |
+| Allow custom categories | Yes | Admin |
+| Maximum categories | 10 | Admin |
+
+Coordinators can add, rename, reorder, and color-code categories to match their school's intervention workflow.
+
+#### 5.7.12 Statistics Denominator Rules
+
+| Setting | Default | Configurable By |
+|---------|---------|-----------------|
+| Primary denominator | "Quality" (excluding special education classes) | Coordinator |
+| Show both denominators | Yes | Coordinator |
+| Custom exclusion criteria | By class exclusion flag (5.7.9) | Admin |
+
+The dashboard, rikuz matrix, and year-over-year comparison views all respect the selected denominator. Both values are always available — this setting controls which is shown as the primary/default.
+
+#### Business Rules Audit
+
+All business rule changes are logged in the audit trail (Section 8.5) with:
+- Rule identifier, old value, new value
+- Changed by (user), timestamp
+- Reason (required for threshold changes)
+- Academic year scope
+
+Rules are versioned per academic year. Changing a rule mid-year triggers a confirmation dialog showing the impact (e.g., "This change would reclassify 12 students' excellence tiers").
+
 ---
 
 ## 6. Color System and Visual Design Language [IMPLEMENTED]
@@ -1551,6 +1689,7 @@ The application uses a primary navigation with four main sections, each containi
   |-- Export Center                  -- Data export tools
   |
 [Settings] (Admin/Coordinator)
+  |-- Business Rules Configuration    -- Thresholds, formulas, eligibility (Section 5.7)
   |-- Academic Year Management
   |-- Class Configuration
   |-- Subject and Formula Management
