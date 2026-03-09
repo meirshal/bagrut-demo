@@ -2,6 +2,7 @@
 // Mapped from 15 background colors + 4 font colors from the Excel specification
 
 import { RiskLevel, ExcellenceTier } from '@/types';
+import type { ScoreColorsConfig } from '@/contexts/ConfigContext';
 
 // ─── Background Color Tokens ───────────────────────────────────────────────────
 
@@ -106,24 +107,35 @@ export const PERIOD_COLORS = [
  * Returns inline style object for a score cell based on its value.
  * Applies background color for borderline scores and font color for
  * failing/excellence scores.
+ *
+ * Accepts an optional config to override the default thresholds.
  */
-export function getScoreCellStyle(score: number): {
+export function getScoreCellStyle(score: number, config?: ScoreColorsConfig): {
   backgroundColor?: string;
   color?: string;
 } {
+  const {
+    failingBelow = 52,
+    borderlineLow = 52,
+    borderlineHigh = 53,
+    excellenceAbove = 90,
+  } = config ?? {};
+
   const style: { backgroundColor?: string; color?: string } = {};
 
   // Background colors for borderline scores
-  if (score === 54) {
+  // The "threshold" score is borderlineHigh + 1 (e.g. 54 by default)
+  const thresholdScore = borderlineHigh + 1;
+  if (score === thresholdScore) {
     style.backgroundColor = SCORE_COLORS.borderline54;
     style.color = SCORE_COLORS.failing;
-  } else if (score >= 52 && score <= 53) {
+  } else if (score >= borderlineLow && score <= borderlineHigh) {
     style.backgroundColor = SCORE_COLORS.borderline52;
     style.color = SCORE_COLORS.failing;
-  } else if (score < 52 && score > 0) {
+  } else if (score < failingBelow && score > 0) {
     // Failing - red font only
     style.color = SCORE_COLORS.failing;
-  } else if (score >= 90) {
+  } else if (score >= excellenceAbove) {
     // Excellence - blue font
     style.color = SCORE_COLORS.excellence;
   }

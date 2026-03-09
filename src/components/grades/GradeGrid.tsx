@@ -16,6 +16,7 @@ import { AccommodationType, ExcellenceTier } from '@/types';
 import { getStudentsByClass } from '@/lib/utils';
 import { getClasses, getSubjects } from '@/data/mock-data';
 import { BG_COLORS, TEXT_COLORS, getScoreCellStyle } from '@/lib/colors';
+import { useConfig } from '@/contexts/ConfigContext';
 import { ScoreCell } from './ScoreCell';
 import { RiskBadge } from './RiskBadge';
 import { ExcellenceBadge } from './ExcellenceBadge';
@@ -353,6 +354,8 @@ const SUBJECT_COL_W = 45;
 const COMPONENT_COL_W = 40;
 
 export function GradeGrid({ classId }: GradeGridProps) {
+  const { config } = useConfig();
+
   const students = useMemo(() => {
     const s = getStudentsByClass(classId);
     return [...s].sort((a, b) =>
@@ -523,7 +526,7 @@ export function GradeGrid({ classId }: GradeGridProps) {
         filterFn: rangeFilter,
         cell: (info: CellContext<Student, unknown>) => {
           const score = info.row.original.weightedAverage;
-          const cellStyle = getScoreCellStyle(Math.round(score));
+          const cellStyle = getScoreCellStyle(Math.round(score), config.scoreColors);
           return (
             <span
               className="text-xs font-bold tabular-nums"
