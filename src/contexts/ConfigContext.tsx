@@ -6,6 +6,7 @@ import {
   useEffect,
   type ReactNode,
 } from 'react';
+import type { RiskRuleSet } from '@/types/risk-rules';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,9 @@ export interface RiskRulesConfig {
   highRiskFailures: number;
   riskFailures: number;
   escalationAvgBelow: number;
+  mode: 'manual' | 'natural';
+  naturalLanguagePrompt?: string;
+  generatedRuleSet?: RiskRuleSet;
 }
 
 export interface WeightedAvgSubject {
@@ -104,6 +108,7 @@ export const DEFAULT_CONFIG: ConfigState = {
     highRiskFailures: 2,
     riskFailures: 1,
     escalationAvgBelow: 65,
+    mode: 'manual',
   },
 
   weightedAvgSubjects: [
@@ -190,6 +195,11 @@ function loadFromStorage(): ConfigState {
           );
           return defaultSubject ? { ...defaultSubject, ...s } : s;
         });
+      }
+
+      // Deep-merge riskRules so new fields (mode, etc.) get defaults
+      if (parsed.riskRules) {
+        merged.riskRules = { ...DEFAULT_CONFIG.riskRules, ...parsed.riskRules };
       }
 
       return merged;
